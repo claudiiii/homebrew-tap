@@ -154,18 +154,17 @@ class EmacsMac < Formula
   def caveats
     <<~EOS
       This is an EXPERIMENTAL build of YAMAMOTO Mitsuharu's "Mac port"
-      addition to GNU Emacs 30, based on jdtsmith's fork.
+      for GNU Emacs 30, based on jdtsmith's fork.
+      Follow the upstream development here: https://github.com/jdtsmith/emacs-mac
 
-      This provides a native GUI support for macOS 12 - macOS 26.
-      After installing, see README-mac and NEWS-mac in #{prefix} for the port details.
+      This formula provides native GUI support for macOS 12 - macOS 26.
+      See #{prefix}/NEWS-mac and #{prefix}/README-mac for the latest updates.
 
-      Emacs.app was installed to:
-        #{prefix}
+      To install Emacs.app copy or move it from #{prefix} to /Applications.
 
-      To link the application to /Applications and CLI scripts, please checkout:
+      For aditional Emacs.app hacks and CLI starter scripts, see:
         https://github.com/railwaycat/homebrew-emacsmacport/blob/master/docs/emacs-start-helpers.md
-
-      For aditional Emacs.app CLI starter scripts, see:
+      and for even more options see this gist:
         https://gist.github.com/4043945
     EOS
   end
