@@ -1,46 +1,15 @@
-require_relative "../Library/UrlResolver.rb"
-require_relative "../Library/Icons.rb"
-
-class EmacsMacAT29 < Formula
-  desc "YAMAMOTO Mitsuharu's Mac port of GNU Emacs"
+class EmacsMacAT31 < Formula
+  desc "YAMAMOTO Mitsuharu's Mac port of GNU Emacs (GNU master experimental)"
   homepage "https://www.gnu.org/software/emacs/"
 
-  @@urlResolver = UrlResolver.new(ENV["HOMEBREW_EMACS_MAC_MODE"] || "remote")
+  # This formula only supports HEAD builds tracking GNU Emacs master
+  # Install with: brew install --HEAD emacs-mac@31exp
+  head "https://github.com/jdtsmith/emacs-mac.git", branch: "emacs-mac-gnu_master_exp"
 
-  stable do
-    url "https://bitbucket.org/mituharu/emacs-mac/get/5a9b8b89ddf75f6f7c5e584e82d021bfa7383805.tar.gz"
-    version "emacs-29.4-mac-10.1"
-    sha256 "c96775606b8a629eaeb551ad99ff486fc42cd42b0c09071f3fef4712c116d837"
-  end
-
-  head do
-    url "https://bitbucket.org/mituharu/emacs-mac.git", branch: "work"
-  end
-
-  patch do
-    # patch for multi-tty support, see the following links for details
-    # https://bitbucket.org/mituharu/emacs-mac/pull-requests/2/add-multi-tty-support-to-be-on-par-with/diff
-    # https://ylluminarious.github.io/2019/05/23/how-to-fix-the-emacs-mac-port-for-multi-tty-access/
-    url (@@urlResolver.patch_url "emacs-mac-29.2-rc-1-multi-tty"), using: CopyDownloadStrategy
-    sha256 "4ede698c8f8f5509e3abf4e6a9c73e1dc3909b0f52f52ad4c33068bfaed3d1e4"
-  end
-
-  patch do
-    url (@@urlResolver.patch_url "prefer-typo-ascender-descender-linegap"), using: CopyDownloadStrategy
-    sha256 "318395d3869d3479da4593360bcb11a5df08b494b995287074d0d744ec562c17"
-  end
-
-  patch do
-    url (@@urlResolver.patch_url "macos-26-event"), using: CopyDownloadStrategy
-    sha256 "86fc40d3a4073969f16527360272b6eed2d9f8ee264186e40c83a19eb19c576d"
-  end
+  license "GPL-3.0-or-later"
 
   option "without-modules", "Build without dynamic modules support"
-  option "with-ctags", "Don't remove the ctags executable that emacs provides"
-  option "with-no-title-bars",
-         "Build with a patch for no title bars on frames (not recommended to use with --HEAD option)"
-  option "with-natural-title-bar",
-         "Build with a patch for title bar color inferred by theme (not recommended to use with --HEAD option)"
+  option "with-no-title-bars", "Build with a patch for no title bars on frames"
   option "with-starter", "Build with a starter script to start emacs GUI from CLI"
   option "with-mac-metal", "use Metal framework in application-side double buffering (experimental)"
   option "with-native-comp", \
@@ -49,21 +18,6 @@ class EmacsMacAT29 < Formula
   option "with-xwidgets", "Build with xwidgets"
   option "with-unlimited-select", "Builds with unlimited select, which increases emacs's open file limit to 10000"
 
-  # icons
-  ICONS_INFO.each do |icon, iconsha|
-    option "with-#{icon}", "Using Emacs icon: #{icon}"
-    next if build.without? icon
-
-    resource icon do
-      url (@@urlResolver.icon_url icon), using: CopyDownloadStrategy
-      sha256 iconsha
-    end
-  end
-
-  deprecated_option "keep-ctags" => "with-ctags"
-  deprecated_option "icon-official" => "with-official-icon"
-  deprecated_option "icon-modern" => "with-modern-icon"
-
   depends_on "autoconf"
   depends_on "automake"
   depends_on "gnutls"
@@ -71,26 +25,11 @@ class EmacsMacAT29 < Formula
   depends_on "texinfo"
   depends_on "jansson" => :recommended
   depends_on "libxml2" => :recommended
-  depends_on "tree-sitter@0.25" => :recommended
+  depends_on "tree-sitter" => :recommended
   depends_on "dbus" => :optional
   depends_on "glib" => :optional
   depends_on "imagemagick" => :optional
   depends_on "librsvg" => :optional
-
-  if build.with? "no-title-bars"
-    # odie "--with-no-title-bars patch not supported on --HEAD" if build.head?
-    patch do
-      url (@@urlResolver.patch_url "emacs-26.2-rc1-mac-7.5-no-title-bar"), using: CopyDownloadStrategy
-      sha256 "8319fd9568037c170f5990f608fb5bd82cd27346d1d605a83ac47d5a82da6066"
-    end
-  end
-
-  if build.with? "natural-title-bar"
-    patch do
-      url (@@urlResolver.patch_url "emacs-mac-title-bar-9.1"), using: CopyDownloadStrategy
-      sha256 "297203d750c5c2d9f05aa68f1f47f1bda43419bf1b9ba63f8167625816c3a88d"
-    end
-  end
 
   if (build.with? "native-comp") || (build.with? "native-compilation")
     depends_on "libgccjit" => :recommended
@@ -132,28 +71,11 @@ class EmacsMacAT29 < Formula
       ENV.append "CFLAGS", "-DDARWIN_UNLIMITED_SELECT"
     end
 
-    icons_dir = buildpath/"mac/Emacs.app/Contents/Resources"
-    ICONS_INFO.each do |icon,|
-      next if build.without? icon
-
-      rm "#{icons_dir}/Emacs.icns"
-      resource(icon).stage do
-        icons_dir.install Dir["*.icns*"].first => "Emacs.icns"
-      end
-    end
-
     system "./autogen.sh"
     system "./configure", *args
     system "make"
     system "make", "install"
     prefix.install "NEWS-mac"
-
-    # Follow Homebrew and don't install ctags from Emacs. This allows Vim
-    # and Emacs and exuberant ctags to play together without violence.
-    if build.without? "ctags"
-      (bin/"ctags").unlink
-      (share/man/man1/"ctags.1.gz").unlink
-    end
 
     if build.with? "starter"
       # Replace the symlink with one that starts GUI
@@ -179,10 +101,14 @@ class EmacsMacAT29 < Formula
 
   def caveats
     <<~EOS
-      This is YAMAMOTO Mitsuharu's "Mac port" addition to
-      GNU Emacs 29. This provides a native GUI support for Mac OS X
-      10.10 - 13. After installing, see README-mac and NEWS-mac
-      in #{prefix} for the port details.
+      This is a HIGHLY EXPERIMENTAL build of YAMAMOTO Mitsuharu's "Mac port"
+      tracking GNU Emacs master branch, based on jdtsmith's fork.
+
+      WARNING: This tracks bleeding-edge development. Expect breakage.
+      Use at your own risk.
+
+      This provides a native GUI support for macOS.
+      After installing, see README-mac and NEWS-mac in #{prefix} for the port details.
 
       Emacs.app was installed to:
         #{prefix}
@@ -195,8 +121,6 @@ class EmacsMacAT29 < Formula
 
       For an Emacs.app CLI starter, see:
         https://gist.github.com/4043945
-
-      Emacs mac port also available on MacPorts with name "emacs-mac-app" and "emacs-mac-app-devel", but they are not maintained by the maintainer of this formula.
     EOS
   end
 
